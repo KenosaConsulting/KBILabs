@@ -3,7 +3,6 @@ KBI Labs FastAPI Application
 Main entry point for the API
 """
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from src.api.v2.intelligence import router as intelligence_router
 from fastapi.middleware.cors import CORSMiddleware
 from .api.v1.api import api_router
@@ -24,9 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(intelligence_router)
@@ -40,11 +36,7 @@ async def root():
         "endpoints": {
             "companies": "/api/v1/companies/",
             "insights": "/api/v1/companies/compass/insights",
-            "stats": "/api/v1/companies/stats/by-state",
-            "demos": {
-                "simple": "/static/simple_demo.html",
-                "enhanced": "/static/enhanced_demo.html"
-            }
+            "stats": "/api/v1/companies/stats/by-state"
         }
     }
 

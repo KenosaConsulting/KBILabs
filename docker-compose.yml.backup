@@ -110,33 +110,11 @@ services:
       - kbi_network
     restart: unless-stopped
 
-  api_umbrella:
-    image: nrel/api-umbrella:0.15.1
-    container_name: kbi_api_umbrella
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "3001:3001"
-    volumes:
-      - ./api-umbrella/config:/etc/api-umbrella
-      - api_umbrella_data:/var/db/api-umbrella
-      - api_umbrella_log:/var/log/api-umbrella
-    environment:
-      - API_UMBRELLA_CONFIG=/etc/api-umbrella/api-umbrella.yml
-    depends_on:
-      - api
-      - mongodb
-    networks:
-      - kbi_network
-
 volumes:
   postgres_data:
   mongo_data:
   neo4j_data:
   redis_data:
-  api_umbrella_data:
-  api_umbrella_log:
 
 networks:
   kbi_network:
