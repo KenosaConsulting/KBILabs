@@ -1,17 +1,17 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 import os
 
-# Use PostgreSQL from environment variable
+# Use SQLite for now
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://kbi_user:your_postgres_password_here@kbi_postgres:5432/kbi_labs"
+    "DATABASE_URL",
+    "sqlite:///./kbi_enriched.db"
 )
 
-# Create engine with PostgreSQL
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
 
 def get_db():

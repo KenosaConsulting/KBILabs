@@ -1,189 +1,87 @@
-import axios from 'axios';
-import config from '../config';
+const API_BASE_URL = 'http://3.143.232.123:9999/api/v1';
 
 class APIService {
-  constructor() {
-    this.client = axios.create({
-      baseURL: config.api.baseURL,
-      timeout: config.api.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Request interceptor
-    this.client.interceptors.request.use(
-      (request) => {
-        const token = localStorage.getItem('kbi_auth_token');
-        if (token) {
-          request.headers.Authorization = `Bearer ${token}`;
-        }
-        return request;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    // Response interceptor with retry logic
-    this.client.interceptors.response.use(
-      (response) => response.data,
-      async (error) => {
-        const originalRequest = error.config;
-
-        // Retry logic
-        if (error.response?.status >= 500 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-
-          if (originalRequest._retryCount <= config.api.retryAttempts) {
-            await new Promise(resolve => 
-              setTimeout(resolve, config.api.retryDelay * originalRequest._retryCount)
-            );
-            return this.client(originalRequest);
-          }
-        }
-
-        // Handle 401 - Unauthorized
-        if (error.response?.status === 401) {
-          localStorage.removeItem('kbi_auth_token');
-          window.location.href = '/login';
-        }
-
-        return Promise.reject(error);
+  async getCompanies(page = 1, limit = 20, search = '') {
+    try {
+      const skip = (page - 1) * limit;
+      const url = `${API_BASE_URL}/companies?skip=${skip}&limit=${limit}${search ? `&search=${search}` : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    );
-  }
-
-  // Authentication
-  async login(credentials) {
-    const response = await this.client.post('/auth/login', credentials);
-    if (response.token) {
-      localStorage.setItem('kbi_auth_token', response.token);
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      throw error;
     }
-    return response;
   }
 
-  async logout() {
-    localStorage.removeItem('kbi_auth_token');
-    return this.client.post('/auth/logout');
+  async getCompanyDetails(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/companies/${id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+      throw error;
+    }
   }
 
-  // Companies
-  async getCompanies(params = {}) {
-    return this.client.get('/companies', { params });
+  async getAnalytics() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      throw error;
+    }
   }
 
-  async getCompany(id) {
-    return this.client.get(`/companies/${id}`);
+  async getKPIs() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/kpis`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching KPIs:', error);
+      return {
+        totalCompanies: 0,
+        totalRevenue: 0,
+        avgKBIScore: 0,
+        activeDeals: 0
+      };
+    }
   }
 
-  async createCompany(data) {
-    return this.client.post('/companies', data);
-  }
-
-  async updateCompany(id, data) {
-    return this.client.put(`/companies/${id}`, data);
-  }
-
-  async deleteCompany(id) {
-    return this.client.delete(`/companies/${id}`);
-  }
-
-  async enrichCompany(id) {
-    return this.client.post(`/companies/${id}/enrich`);
-  }
-
-  // KPIs and Metrics
-  async getKPIs(companyId, params = {}) {
-    return this.client.get(`/companies/${companyId}/kpis`, { params });
-  }
-
-  async updateKPI(companyId, kpiId, data) {
-    return this.client.put(`/companies/${companyId}/kpis/${kpiId}`, data);
-  }
-
-  async getFinancialData(companyId, params = {}) {
-    return this.client.get(`/companies/${companyId}/financials`, { params });
-  }
-
-  // AI Insights
-  async getAIInsights(companyId) {
-    return this.client.get(`/ai/insights/${companyId}`);
-  }
-
-  async generateInsight(companyId, type) {
-    return this.client.post(`/ai/insights/${companyId}/generate`, { type });
-  }
-
-  async queryAI(query) {
-    return this.client.post('/ai/query', { query });
-  }
-
-  // Market Intelligence
-  async getCompetitors(companyId) {
-    return this.client.get(`/market-intelligence/competitors/${companyId}`);
-  }
-
-  async getMarketTrends(industry) {
-    return this.client.get('/market-intelligence/trends', { 
-      params: { industry } 
-    });
-  }
-
-  async getIndustryBenchmarks(industry, metrics) {
-    return this.client.get('/market-intelligence/benchmarks', {
-      params: { industry, metrics }
-    });
-  }
-
-  // Bulk Operations
-  async bulkImport(file, type = 'companies') {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
-
-    return this.client.post('/bulk/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  }
-
-  async bulkExport(params) {
-    return this.client.post('/bulk/export', params, {
-      responseType: 'blob'
-    });
-  }
-
-  // Scenario Planning
-  async createScenario(companyId, scenario) {
-    return this.client.post(`/companies/${companyId}/scenarios`, scenario);
-  }
-
-  async getScenarios(companyId) {
-    return this.client.get(`/companies/${companyId}/scenarios`);
-  }
-
-  async runScenario(companyId, scenarioId) {
-    return this.client.post(`/companies/${companyId}/scenarios/${scenarioId}/run`);
-  }
-
-  // Search
-  async search(query, filters = {}) {
-    return this.client.get('/search', {
-      params: { q: query, ...filters }
-    });
-  }
-
-  // Analytics
-  async getAnalytics(params) {
-    return this.client.get('/analytics', { params });
-  }
-
-  async getPortfolioAnalytics(portfolioId) {
-    return this.client.get(`/analytics/portfolio/${portfolioId}`);
-  }
-
-  // Cost Monitoring
-  async getAPICosts(period = 'daily') {
-    return this.client.get('/admin/api-costs', { params: { period } });
+  async getMarketIntelligence() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/market-intelligence`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching market intelligence:', error);
+      // Return null to trigger mock data
+      return null;
+    }
   }
 }
 

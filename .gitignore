@@ -7,37 +7,58 @@ __pycache__/
 env/
 venv/
 ENV/
-.env
-.venv/
-
-# Data files
-*.csv
-*.json
-*.parquet
-data/uploads/*
-data/exports/*
-!data/uploads/.gitkeep
-!data/exports/.gitkeep
+.venv
+*.egg-info/
+dist/
+build/
 
 # Logs
-logs/*
 *.log
-!logs/.gitkeep
+kbi_enrichment_complete.log
+enrichment_report_final.txt
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Database
+# Database files (large)
 *.db
 *.sqlite
 *.sqlite3
 
-# Docker
-.dockerignore
+# API Keys and secrets
+.env
+config.py
+*_api_key*
+*credentials*
+
+# Large data files
+*.csv
+*.xlsx
+*.json
+!companies.json
+!companies_loaded.json
+!mock_portfolio_companies.json
+
+# Temporary files
+*.tmp
+*.bak
+*~
+*.swp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Test files
+test_*.html
+debug_*.html
+*_test.py
+*_debug.py
+
+# Backup files
+*_backup.*
+*_old.*
+*.backup
+
+# Patent data (large)
+patent_data/
+enrichment_data/

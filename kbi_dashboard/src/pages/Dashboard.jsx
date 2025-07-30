@@ -1,108 +1,157 @@
-import React from 'react';
-import { useCompanies } from '../hooks/useCompanies';
-import { Activity, TrendingUp, Users, DollarSign, Brain, AlertCircle } from 'lucide-react';
-
-const MetricCard = ({ title, value, change, icon: Icon, color }) => (
-  <div className="bg-white rounded-lg shadow p-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="text-2xl font-semibold text-gray-900">{value}</p>
-        {change && (
-          <p className={`text-sm ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {change > 0 ? '+' : ''}{change}%
-          </p>
-        )}
-      </div>
-      <div className={`p-3 rounded-lg ${color}`}>
-        <Icon className="h-6 w-6 text-white" />
-      </div>
-    </div>
-  </div>
-);
+import React, { useState, useEffect } from 'react';
+import { Activity, TrendingUp, Users, DollarSign, Brain, Building2, FileText, BarChart3 } from 'lucide-react';
+import api from '../services/api';
 
 const Dashboard = () => {
-  const { companies, totalCount, isLoading } = useCompanies({ limit: 5 });
+  const [stats, setStats] = useState({
+    totalCompanies: 0,
+    totalContracts: 110,
+    aiInsights: 156,
+    portfolioValue: 0
+  });
+  const [recentCompanies, setRecentCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const metrics = [
-    {
-      title: 'Total Companies',
-      value: totalCount || 0,
-      icon: Users,
-      color: 'bg-primary-500'
-    },
-    {
-      title: 'Active KPIs',
-      value: '2,847',
-      change: 12.5,
-      icon: Activity,
-      color: 'bg-secondary-500'
-    },
-    {
-      title: 'AI Insights',
-      value: '156',
-      change: 8.2,
-      icon: Brain,
-      color: 'bg-ai-500'
-    },
-    {
-      title: 'Portfolio Value',
-      value: '$45.2M',
-      change: -2.4,
-      icon: DollarSign,
-      color: 'bg-green-500'
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch companies
+      const companiesData = await api.getCompanies(1, 5);
+      console.log('Companies data:', companiesData);
+      
+      setRecentCompanies(companiesData.companies || []);
+      
+      // Fetch KPIs
+      const kpisData = await api.getKPIs();
+      console.log('KPIs data:', kpisData);
+      
+      // Update stats with proper data
+      const totalCompanies = companiesData.total || companiesData.totalCount || 0;
+      const totalRevenue = kpisData.totalRevenue || 0;
+      const activeDeals = kpisData.activeDeals || 110;
+      
+      setStats({
+        totalCompanies: totalCompanies,
+        totalContracts: activeDeals,
+        aiInsights: 156,
+        portfolioValue: totalRevenue
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  if (isLoading) {
+  const formatValue = (value) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    }
+    return `$${value}`;
+  };
+
+  const MetricCard = ({ title, value, change, icon: Icon, color }) => (
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-2">{value}</p>
+          {change && (
+            <p className={`text-sm mt-2 ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {change > 0 ? '+' : ''}{change}%
+            </p>
+          )}
+        </div>
+        <div className={`p-3 rounded-lg ${color}`}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
         <p className="text-gray-600">Welcome to KBI Labs Intelligence Platform</p>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <MetricCard key={index} {...metric} />
-        ))}
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Total Companies"
+          value={stats.totalCompanies}
+          icon={Building2}
+          color="bg-blue-500"
+        />
+        <MetricCard
+          title="Total Contracts"
+          value={stats.totalContracts}
+          change={12.5}
+          icon={FileText}
+          color="bg-purple-500"
+        />
+        <MetricCard
+          title="AI Insights"
+          value={stats.aiInsights}
+          change={8.2}
+          icon={Brain}
+          color="bg-indigo-500"
+        />
+        <MetricCard
+          title="Portfolio Value"
+          value={formatValue(stats.portfolioValue)}
+          change={15.3}
+          icon={DollarSign}
+          color="bg-green-500"
+        />
       </div>
 
       {/* Recent Companies */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Companies</h2>
-        </div>
+      <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6">
-          {companies.length > 0 ? (
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Companies</h2>
+          
+          {recentCompanies.length > 0 ? (
             <div className="space-y-4">
-              {companies.map((company) => (
-                <div key={company.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{company.name}</h3>
-                    <p className="text-sm text-gray-600">{company.industry}</p>
+              {recentCompanies.map((company) => (
+                <div key={company.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{company.name}</h4>
+                      <p className="text-sm text-gray-500">{company.industry} • {company.location}</p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">${company.revenue || 'N/A'}</p>
-                    <p className="text-xs text-gray-600">Revenue</p>
+                    <p className="font-medium text-gray-900">{company.revenue}</p>
+                    <p className="text-sm text-gray-500">KBI Score: {company.kbi_score}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-600">No companies found</p>
-              <button className="mt-4 btn-primary">
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 mb-4">No companies found</p>
+              <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                 Add Your First Company
               </button>
             </div>
@@ -110,20 +159,18 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* AI Insights Preview */}
-      <div className="bg-gradient-to-r from-ai-500 to-secondary-500 rounded-lg shadow p-6 text-white">
+      {/* AI Insights */}
+      <div className="mt-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg text-white p-8">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">AI-Powered Insights</h2>
-            <p className="mt-1 text-white/80">
-              Get intelligent recommendations and predictions powered by advanced AI
-            </p>
+            <h2 className="text-2xl font-bold mb-2">AI-Powered Insights</h2>
+            <p className="text-purple-100">Get intelligent recommendations and predictions powered by advanced AI</p>
+            <button className="mt-4 px-6 py-2 bg-white text-purple-600 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+              Explore AI Features
+            </button>
           </div>
-          <Brain className="h-12 w-12 text-white/50" />
+          <Brain className="h-24 w-24 text-purple-200 opacity-50" />
         </div>
-        <button className="mt-4 bg-white text-ai-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-          Explore AI Features
-        </button>
       </div>
     </div>
   );

@@ -26,6 +26,28 @@ export function useCompanies(filters = {}) {
   };
 }
 
+export function useAnalytics() {
+  const { data, error, isLoading } = useSWR(
+    '/analytics',
+    () => api.getAnalytics(),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000 // 1 minute
+    }
+  );
+
+  return {
+    analytics: data || {
+      totalCompanies: 0,
+      totalRevenue: "$0M",
+      totalContracts: 0,
+      stateCount: 0
+    },
+    isLoading,
+    isError: error
+  };
+}
+
 export function useCompany(id) {
   const { data, error, mutate, isLoading } = useSWR(
     id ? `/companies/${id}` : null,
