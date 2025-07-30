@@ -1,40 +1,37 @@
-"""Cache service for API responses"""
-import json
+"""Simple in-memory cache service"""
 from typing import Any, Optional
-import logging
-
-logger = logging.getLogger(__name__)
+from datetime import datetime, timedelta
+import asyncio
 
 class CacheService:
-    """Simple in-memory cache (can be replaced with Redis later)"""
-    
     def __init__(self):
         self._cache = {}
+        self._lock = asyncio.Lock()
     
     async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache"""
-        if key in self._cache:
-            logger.debug(f"Cache hit: {key}")
-            return self._cache[key]
-        logger.debug(f"Cache miss: {key}")
-        return None
+        async with self._lock:
+            if key in self._cache:
+                value, expiry = self._cache[key]
+                if expiry > datetime.now():
+                    return value
+                else:
+                    del self._cache[key]
+            return None
     
-    async def set(self, key: str, value: Any, expire: int = 300) -> None:
-        """Set value in cache with expiration (in seconds)"""
-        # For now, simple in-memory cache without expiration
-        self._cache[key] = value
-        logger.debug(f"Cache set: {key}")
+    async def set(self, key: str, value: Any, ttl: int = 300):
+        """Set a value with TTL in seconds"""
+        async with self._lock:
+            expiry = datetime.now() + timedelta(seconds=ttl)
+            self._cache[key] = (value, expiry)
     
-    async def delete(self, key: str) -> None:
-        """Delete value from cache"""
-        if key in self._cache:
-            del self._cache[key]
-            logger.debug(f"Cache delete: {key}")
+    async def delete(self, key: str):
+        async with self._lock:
+            if key in self._cache:
+                del self._cache[key]
     
-    async def clear(self) -> None:
-        """Clear all cache"""
-        self._cache.clear()
-        logger.debug("Cache cleared")
+    async def clear(self):
+        async with self._lock:
+            self._cache.clear()
 
-# Create singleton instance
+# Global cache instance
 cache_service = CacheService()

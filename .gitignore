@@ -97,3 +97,45 @@ secrets/
 credentials/
 *.pem
 *.key
+
+# Data files
+data/
+*.csv
+nsf_data/
+patent_data/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+test_*.html
+debug_*.html
+
+# Temporary scripts
+fix_*.sh
+quick_*.sh
