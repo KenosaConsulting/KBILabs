@@ -1,3 +1,5 @@
+![CI/CD Pipeline](https://github.com/KenosaCommunity/KBILabs/workflows/CI%2FCD%20Pipeline/badge.svg)
+
 # KBI Labs Intelligence Platform
 
 A comprehensive business intelligence platform that democratizes data insights for small businesses and investors.
