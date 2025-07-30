@@ -1,16 +1,14 @@
-"""Health Check Router"""
+"""Health check router"""
 from fastapi import APIRouter
-from src.utils.health_checker import HealthChecker
+from datetime import datetime
 
-router = APIRouter()
-health_checker = HealthChecker()
+router = APIRouter(tags=["health"])
 
-@router.get("/")
+@router.get("/health")
 async def health_check():
     """Basic health check"""
-    return await health_checker.check_health()
-
-@router.get("/detailed")
-async def detailed_health():
-    """Detailed health check including all dependencies"""
-    return await health_checker.detailed_check()
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "KBI Labs API"
+    }

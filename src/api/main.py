@@ -1,83 +1,67 @@
-"""
-KBI Labs API Gateway - Scalable Architecture
-"""
+"""Main API Application"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from src.api.routers import (
-    companies, analytics, intelligence, 
-    patents, market, portfolio, auth, health
-)
-from src.config.settings import get_settings
-from src.integrations.registry import integration_registry
-from src.utils.logging import setup_logging
+import logging
 
-settings = get_settings()
-logger = setup_logging(__name__)
+from src.api.routers import companies, analytics, health
+from src.models.database_manager import db_manager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle"""
     logger.info("Starting KBI Labs API Gateway...")
-    
-    # Initialize all external API integrations
-    await integration_registry.initialize_all()
-    
+    # Initialize database
+    await db_manager.initialize()
     yield
-    
     # Cleanup
-    await integration_registry.close_all()
+    await db_manager.close()
     logger.info("Shutting down KBI Labs API Gateway...")
 
+# Create FastAPI app
 app = FastAPI(
-    title="KBI Labs Intelligence Platform",
-    description="Scalable API Gateway for SMB Intelligence",
+    title="KBI Labs API",
+    description="Enterprise Intelligence Platform API",
     version="2.0.0",
     lifespan=lifespan,
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=["*"],  # Configure appropriately for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include all routers
-API_V2_PREFIX = "/api/v2"
-
-# Core business routers
-app.include_router(companies.router, prefix=f"{API_V2_PREFIX}/companies", tags=["companies"])
-app.include_router(analytics.router, prefix=f"{API_V2_PREFIX}/analytics", tags=["analytics"])
-app.include_router(intelligence.router, prefix=f"{API_V2_PREFIX}/intelligence", tags=["intelligence"])
-
-# External data routers
-app.include_router(patents.router, prefix=f"{API_V2_PREFIX}/patents", tags=["patents"])
-app.include_router(market.router, prefix=f"{API_V2_PREFIX}/market", tags=["market"])
-
-# Platform features
-app.include_router(portfolio.router, prefix=f"{API_V2_PREFIX}/portfolio", tags=["portfolio"])
-app.include_router(auth.router, prefix=f"{API_V2_PREFIX}/auth", tags=["authentication"])
-app.include_router(health.router, prefix="/health", tags=["health"])
+# Include routers
+app.include_router(health.router)
+app.include_router(companies.router, prefix="/api/v2")
+app.include_router(analytics.router, prefix="/api/v2")
 
 @app.get("/")
 async def root():
+    """Root endpoint"""
     return {
-        "name": "KBI Labs Intelligence Platform",
+        "message": "Welcome to KBI Labs API",
         "version": "2.0.0",
-        "documentation": "/api/docs",
-        "health": "/health"
+        "docs": "/api/docs"
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "src.api.main:app",
-        host="0.0.0.0",
-        port=settings.port,
-        reload=settings.debug
-    )
+# Health check at root level
+@app.get("/health/")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "service": "KBI Labs API Gateway",
+        "database": "connected"
+    }
