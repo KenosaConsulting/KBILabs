@@ -68,3 +68,48 @@ docker-compose down
 ## 📈 Mission
 
 To democratize business intelligence by transforming raw data into actionable insights that empower small businesses to compete and investors to discover hidden opportunities.
+
+## Recent Updates (v2.0.0)
+
+### 🎯 Production Monitoring
+- Prometheus metrics collection
+- Grafana dashboards
+- Health check endpoints
+- System resource monitoring
+- Request/response tracking
+
+### 🏛️ USASpending Integration
+- Federal contract data enrichment
+- Search spending by UEI
+- Recipient profiles
+- Awards summaries
+- Cached responses for performance
+
+### 📊 API Endpoints
+
+#### Health & Monitoring
+- `GET /health` - Basic health check
+- `GET /api/v3/health/detailed` - Detailed system health
+- `GET /metrics` - Prometheus metrics
+
+#### USASpending
+- `GET /api/v3/usaspending/health` - USASpending API status
+- `GET /api/v3/usaspending/search/{uei}` - Search federal contracts
+- `GET /api/v3/usaspending/profile/{uei}` - Get recipient profile
+
+#### Enrichment
+- `POST /api/v3/enrichment/enrich` - Enrich company data
+
+### 🚀 Quick Start
+
+```bash
+# Check API health
+curl http://localhost:8001/health
+
+# Search federal contracts
+curl http://localhost:8001/api/v3/usaspending/search/{UEI}
+
+# Monitor performance
+./simple_monitor.sh
+
+
