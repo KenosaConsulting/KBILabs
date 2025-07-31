@@ -21,6 +21,10 @@ async def lifespan(app: FastAPI):
     # Cleanup
     await db_manager.close()
     logger.info("Shutting down KBI Labs API Gateway...")
+from src.monitoring.metrics import metrics_endpoint
+from src.monitoring.middleware import MonitoringMiddleware
+from src.api.routers import health_monitoring
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -41,6 +45,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Add monitoring middleware
+app.add_middleware(MonitoringMiddleware)
+
+# Add metrics endpoint
+@app.get("/metrics")
+async def get_metrics():
+    return await metrics_endpoint()
+
+# Include health monitoring router
+app.include_router(health_monitoring.router, prefix="/api/v3", tags=["monitoring"])
 
 # Include routers
 app.include_router(health.router)
